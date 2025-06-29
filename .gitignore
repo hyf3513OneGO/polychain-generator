@@ -1,0 +1,44 @@
+# 环境配置
+.env
+.venv
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+configs/
+results/
+
+# 日志文件
+*.log
+*.log.*
+
+# 敏感信息
+*.key
+*.pem
+*.crt
+*.csr
+*.pfx
+*.p12
+*.env
+*.secret
+credentials.json
+config.secret.json
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 打包文件
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+*~

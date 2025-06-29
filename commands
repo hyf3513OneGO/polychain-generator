@@ -1,0 +1,22 @@
+## A800 Docker
+find $CONDA_PREFIX -name "libstdc++.so.*"
+conda install nvidia/label/cuda-12.1.1::cuda-toolkit
+ln -s libstdc++.so.6.0.34 /home/anaconda3/envs/lpconf/lib/libstdc++.so.6
+
+conda install -c conda-forge openff-toolkit -y
+conda install --yes -c conda-forge openmmforcefields -y
+**一定要选择和自己的cuda版本一样的来安装**
+conda install -c conda-forge openmm cuda-version=12.x -y
+conda install conda-forge::ase -y
+conda install -c conda-forge rdkit -y
+pip install pika
+docker run --name rabbitmq -d -p 15672:15672 -p 5672:5672 -e RABBITMQ_MANAGEMENT_ALLOW_WEB_ACCESS=true -e RABBITMQ_PASSWORD=hyf3513RMQ~ bitnami/rabbitmq:latest
+
+docker run --name redis -d -p 6379:6379 -e REDIS_PASSWORD="hyf3513REDIS~"  bitnami/redis:latest
+## A800 Metric
+165 atoms 
+single 243.29 seconds
+mixed 239.6 seconds
+double 247.63 seconds
+CPU More than 10 minutes
+

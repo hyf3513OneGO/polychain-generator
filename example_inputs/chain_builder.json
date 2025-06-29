@@ -1,0 +1,15 @@
+{
+    "id": "task_20250628_001",
+    "psmiles": "[Pt]CC([Pt])C",
+    "n_repeat": 5,
+    "relaxation_steps": 350,
+    "force_field": "MMFF",
+    "relaxation":{
+        "n_steps": 5000000,
+        "platform": "CUDA",
+        "precision": "mixed",
+        "temperature_kelvin": 289,
+        "forcefield": "gaff-2.11",
+        "timestep_fs": 2.0
+    }
+}

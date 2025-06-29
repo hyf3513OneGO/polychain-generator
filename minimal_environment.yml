@@ -1,0 +1,16 @@
+name: lpconf
+channels:
+  - defaults
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+dependencies:
+  - python=3.10
+  - openmmforcefields
+  - conda-forge::rdkit
+  - openbabel
+  - nvidia/label/cuda-12.1.1::cuda-toolkit
+  - cuda-version=12.2
+  - openmm
+  - openff-toolkit
+  - openmm-ml
+prefix: /home/anaconda3/envs/lpconf
