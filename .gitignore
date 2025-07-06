@@ -8,7 +8,7 @@ __pycache__/
 *.pyd
 configs/
 results/
-
+*-log*.txt
 # 日志文件
 *.log
 *.log.*

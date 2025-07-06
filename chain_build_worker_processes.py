@@ -23,7 +23,8 @@ class ChainBuilderConfig:
 
 def process_chain_build_sync(msg: dict):
     task_id = msg["id"]
-    save_folder = os.path.join("results", task_id)
+    prefix_folder = msg["prefix"]
+    save_folder = os.path.join("results",prefix_folder, task_id)
 
     if not os.path.exists(save_folder):
         os.makedirs(save_folder, exist_ok=True)
