@@ -84,12 +84,12 @@ def run_md_simulation(
         speed=True, totalSteps=n_steps, separator='\t'))
 
     # 11. 执行模拟
-    print("Starting simulation...")
-    start_time = time.time()
-    simulation.step(n_steps)
-    elapsed_time = time.time() - start_time
-    print(f"Simulation completed in {elapsed_time:.2f} seconds "
-          f"({elapsed_time / 60:.2f} minutes, {elapsed_time / 3600:.2f} hours)")
+    # print("Starting simulation...")
+    # start_time = time.time()
+    # simulation.step(n_steps)
+    # elapsed_time = time.time() - start_time
+    # print(f"Simulation completed in {elapsed_time:.2f} seconds "
+    #       f"({elapsed_time / 60:.2f} minutes, {elapsed_time / 3600:.2f} hours)")
 
     # 12. 提取最终构象并保存
     state = simulation.context.getState(getPositions=True)

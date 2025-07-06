@@ -33,8 +33,8 @@ class RabbitMQUtils:
             port=rmq_config.port,
             virtual_host=rmq_config.virtual_host,
             credentials=credentials,
-            heartbeat=60000,                    # 设置心跳（秒），例如 1000 分钟
-            blocked_connection_timeout=30000    # 被阻塞连接最大等待时长（秒）
+            heartbeat=600,                    # 设置心跳（秒），例如 1000 分钟
+            blocked_connection_timeout=60    # 被阻塞连接最大等待时长（秒）
         )
         self.max_retries = max_retries
         self.retry_delay = retry_delay
