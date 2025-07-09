@@ -4,7 +4,6 @@ import shutil
 import time
 import argparse
 import asyncio
-from concurrent.futures import ProcessPoolExecutor
 from aio_pika import connect_robust, IncomingMessage, Message
 
 from utils.pika_utils import RMQConfig
@@ -20,11 +19,10 @@ class ChainRelaxConfig:
             self.queue_name = config["chainRelaxation"]["queue_name"]
             self.failed_queue_name = config["chainRelaxation"].get("failed_queue_name", "chainRelaxation_failed")
 
-
 def process_relaxation_sync(msg: dict):
     task_id = msg["id"]
     prefix_folder = msg["prefix"]
-    save_folder = os.path.join("results",prefix_folder, task_id)
+    save_folder = os.path.join("results", prefix_folder, task_id)
 
     if not os.path.exists(save_folder):
         raise FileNotFoundError("Init Chain conformation not found")
@@ -42,8 +40,14 @@ def process_relaxation_sync(msg: dict):
     )
     return task_id, msg
 
+def run_task_in_subprocess(msg):
+    try:
+        return process_relaxation_sync(msg)
+    except Exception as e:
+        return ("error", msg, str(e))
 
-async def handle_message(message: IncomingMessage, config: ChainRelaxConfig, channel, pool: ProcessPoolExecutor):
+
+async def handle_message(message: IncomingMessage, config: ChainRelaxConfig, channel):
     async with message.process():
         try:
             msg = json.loads(message.body.decode())
@@ -51,17 +55,23 @@ async def handle_message(message: IncomingMessage, config: ChainRelaxConfig, cha
             node_print(config.node, f"Chain Relax Task <{task_id}> started")
 
             loop = asyncio.get_running_loop()
-            result = await loop.run_in_executor(pool, process_relaxation_sync, msg)
-            task_id, msg = result
+            result = await loop.run_in_executor(None, run_task_in_subprocess, msg)
 
+            if result[0] == "error":
+                raise RuntimeError(result[2])
+
+            task_id, msg = result
             node_print(config.node, f"Task {task_id} completed successfully.")
 
         except Exception as e:
-            msg = json.loads(message.body.decode())
-            task_id = msg.get("id", "unknown")
-            save_folder = os.path.join("results", task_id)
-            if os.path.exists(save_folder):
-                shutil.rmtree(save_folder)
+            try:
+                msg = json.loads(message.body.decode())
+                task_id = msg.get("id", "unknown")
+                save_folder = os.path.join("results", msg.get("prefix", ""), task_id)
+                if os.path.exists(save_folder):
+                    shutil.rmtree(save_folder)
+            except Exception:
+                pass
             await channel.default_exchange.publish(
                 Message(body=message.body, headers=message.headers, content_type="application/json"),
                 routing_key=config.failed_queue_name
@@ -69,7 +79,7 @@ async def handle_message(message: IncomingMessage, config: ChainRelaxConfig, cha
             node_print(config.node, f"Task {task_id} failed with error: {e} and sent to failed queue.")
 
 
-async def worker_main(worker_id: int, config_path: str, pool: ProcessPoolExecutor):
+async def worker_main(worker_id: int, config_path: str):
     config = ChainRelaxConfig(config_path)
     rmq_config = RMQConfig(config_path)
     worker_print(config.node, worker_id, f"[Worker {worker_id}] Starting ChainRelax with aio-pika")
@@ -86,7 +96,7 @@ async def worker_main(worker_id: int, config_path: str, pool: ProcessPoolExecuto
     await channel.set_qos(prefetch_count=1)
     queue = await channel.declare_queue(config.queue_name, durable=True)
 
-    await queue.consume(lambda msg: handle_message(msg, config, channel, pool), no_ack=False)
+    await queue.consume(lambda msg: handle_message(msg, config, channel), no_ack=False)
 
     try:
         while True:
@@ -102,16 +112,12 @@ async def main():
     parser.add_argument('--workers', help='Num for workers', default=16)
     args = parser.parse_args()
 
-    pool = ProcessPoolExecutor(max_workers=os.cpu_count())
-
-    tasks = [asyncio.create_task(worker_main(i, args.config, pool)) for i in range(int(args.workers))]
+    tasks = [asyncio.create_task(worker_main(i, args.config)) for i in range(int(args.workers))]
 
     try:
         await asyncio.gather(*tasks)
     except asyncio.CancelledError:
         pass
-    finally:
-        pool.shutdown(wait=True)
 
 
 if __name__ == "__main__":

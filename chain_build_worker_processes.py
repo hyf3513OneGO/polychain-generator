@@ -54,6 +54,7 @@ async def handle_message(message: IncomingMessage, config: ChainBuilderConfig, c
 
             relax_body = msg["relaxation"]
             relax_body["id"] = msg["id"]
+            relax_body["prefix"] = msg["prefix"]
             relax_body["psmiles"] = msg["psmiles"]
             body = json.dumps(relax_body).encode()
             await channel.default_exchange.publish(
