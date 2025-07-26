@@ -5,7 +5,11 @@ import time
 import argparse
 import asyncio
 from aio_pika import connect_robust, IncomingMessage, Message
-
+import os
+import numpy as np
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from utils.monomer_utils import compute_rigid_transforms_for_matches, extract_monomers, save_monomers_to_sdf
 from utils.pika_utils import RMQConfig
 from utils.log_utils import node_print, worker_print
 from utils.openmm_relax_utils import run_md_simulation
@@ -23,10 +27,6 @@ def process_relaxation_sync(msg: dict):
     task_id = msg["id"]
     prefix_folder = msg["prefix"]
     save_folder = os.path.join("results", prefix_folder, task_id)
-
-    if not os.path.exists(save_folder):
-        raise FileNotFoundError("Init Chain conformation not found")
-
     run_md_simulation(
         input_file=os.path.join(save_folder, "init_chain.sdf"),
         n_steps=int(msg["n_steps"]),
@@ -38,6 +38,18 @@ def process_relaxation_sync(msg: dict):
         output_trajectory=os.path.join(save_folder, "trajectory.dcd"),
         output_sdf=os.path.join(save_folder, "relaxed_chain.sdf")
     )
+    sdf_file = os.path.join(save_folder, "relaxed_chain.sdf")
+    if os.path.exists(sdf_file):
+        smiles_path = os.path.join(save_folder,"psmiles.txt")
+        with open(smiles_path,"r") as f:
+            smiles = f.readline()
+        monomer_dir = os.path.join(save_folder,"monomers")
+        mol_H  = Chem.MolFromMolFile(sdf_file, removeHs=False)  # 保留H
+        mol_noH = Chem.RemoveHs(mol_H, updateExplicitCount=True)
+        filled_index_clean, matches_H, matches_with_H,map_noH_to_H,keypoints,keypoints_poly = extract_monomers(sdf_file,smiles)
+        R_arr, t_arr = compute_rigid_transforms_for_matches(mol_H.GetConformer(),matches_H,keypoints)
+        save_monomers_to_sdf(mol_H, map_noH_to_H,matches_with_H, monomer_dir,keypoints_poly,R_arr,t_arr)
+    
     return task_id, msg
 
 def run_task_in_subprocess(msg):

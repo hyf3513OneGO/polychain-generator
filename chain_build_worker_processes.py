@@ -30,7 +30,6 @@ def process_chain_build_sync(msg: dict):
         os.makedirs(save_folder, exist_ok=True)
     with open(os.path.join(save_folder, "psmiles.txt"), "w") as f:
         f.write(msg["psmiles"].replace("Pt", "*"))
-
     psmiles2ChainPoly(
         psmiles=msg["psmiles"],
         n_repeat=msg["n_repeat"],
@@ -51,7 +50,9 @@ async def handle_message(message: IncomingMessage, config: ChainBuilderConfig, c
             loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(pool, process_chain_build_sync, msg)
             task_id, msg = result
-
+            while not os.path.exists(os.path.join("results", msg["prefix"], task_id, "init_chain.sdf")):
+                node_print(config.node, f"Waiting for chain build result for task {task_id}...")
+                await asyncio.sleep(1)
             relax_body = msg["relaxation"]
             relax_body["id"] = msg["id"]
             relax_body["prefix"] = msg["prefix"]
@@ -106,7 +107,7 @@ async def worker_main(worker_id: int, config_path: str, pool: ProcessPoolExecuto
 async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', help='Path to configuration file', default='configs/config.json')
-    parser.add_argument('--workers', help='Num for workers', default=20)
+    parser.add_argument('--workers', help='Num for workers', default=15)
     args = parser.parse_args()
 
     pool = ProcessPoolExecutor(max_workers=os.cpu_count())

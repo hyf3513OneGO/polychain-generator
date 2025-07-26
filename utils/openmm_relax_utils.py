@@ -6,7 +6,9 @@ from openff.toolkit.utils import RDKitToolkitWrapper
 from openff.units.openmm import to_openmm
 from openff.units import unit as off_unit
 from openmmml import MLPotential
-
+import rdkit.Chem as Chem
+import rdkit.Chem.AllChem as AllChem
+import os
 import numpy as np
 import sys
 import time
@@ -25,7 +27,7 @@ def run_md_simulation(
 ):
     # 1. 加载分子
     mol = Molecule.from_file(input_file, file_format="sdf")
-
+    
     # 2. 分配 Gasteiger 电荷
     toolkit = RDKitToolkitWrapper()
     mol.assign_partial_charges("gasteiger", toolkit_registry=toolkit)
@@ -77,19 +79,20 @@ def run_md_simulation(
 
     # 10. 设置初速度并添加报告器
     simulation.context.setVelocitiesToTemperature(temperature_kelvin * unit.kelvin)
-    simulation.reporters.append(DCDReporter(output_trajectory, 1000))
-    simulation.reporters.append(StateDataReporter(
-        sys.stdout, 1000, step=True, temperature=True, potentialEnergy=True,
-        kineticEnergy=True, totalEnergy=True, progress=True, remainingTime=True,
-        speed=True, totalSteps=n_steps, separator='\t'))
+    # simulation.reporters.append(DCDReporter(output_trajectory, 1000))
+    # simulation.reporters.append(StateDataReporter(
+    #     sys.stdout, 1000, step=True, temperature=True, potentialEnergy=True,
+    #     kineticEnergy=True, totalEnergy=True, progress=True, remainingTime=True,
+    #     speed=True, totalSteps=n_steps, separator='\t'))
 
     # 11. 执行模拟
-    # print("Starting simulation...")
-    # start_time = time.time()
-    # simulation.step(n_steps)
-    # elapsed_time = time.time() - start_time
-    # print(f"Simulation completed in {elapsed_time:.2f} seconds "
-    #       f"({elapsed_time / 60:.2f} minutes, {elapsed_time / 3600:.2f} hours)")
+    if n_steps>0:
+        print("Starting simulation...")
+        start_time = time.time()
+        simulation.step(n_steps)
+        elapsed_time = time.time() - start_time
+        print(f"Simulation completed in {elapsed_time:.2f} seconds "
+            f"({elapsed_time / 60:.2f} minutes, {elapsed_time / 3600:.2f} hours)")
 
     # 12. 提取最终构象并保存
     state = simulation.context.getState(getPositions=True)
